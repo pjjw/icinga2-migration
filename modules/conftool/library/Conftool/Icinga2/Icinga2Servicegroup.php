@@ -18,6 +18,10 @@ class Icinga2Servicegroup extends Icinga2ObjectDefinition
         'servicegroup_members' => 'groups',
     );
 
+    protected $v1RejectedAttributeMap = array(
+        'servicegroup_name',
+    );
+
     protected function convertMembers($members)
     {
         $count = 0;

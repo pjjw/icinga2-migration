@@ -18,6 +18,10 @@ class Icinga2Hostgroup extends Icinga2ObjectDefinition
         'hostgroup_members' => 'groups',
     );
 
+    protected $v1RejectedAttributeMap = array(
+        'hostgroup_name',
+	);
+
     protected function convertMembers($members)
     {
         foreach ($this->splitComma($members) as $member) {
