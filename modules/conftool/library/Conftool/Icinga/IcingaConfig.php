@@ -150,8 +150,8 @@ class IcingaConfig
             $this->discoverDefinitionFiles($dir);
         }
         $this->parseDefinitionFiles();
-        $this->resolveParents();
         $this->createDefinitionIndexes();
+        $this->resolveParents();
         $this->resolveServices();
     }
 
@@ -288,16 +288,28 @@ class IcingaConfig
     protected function resolveParents()
     {
         foreach ($this->allDefinitions as $definition) {
-            if (! $definition->use) { return; }
+            //print_r("definition:".$definition." ".var_dump($definition));
+            //skip if no templates defined
+            if (! $definition->use) {
+                continue;
+            }
             $uses = $this->splitComma($definition->use);
             foreach ($uses as $use) {
                 if (! array_key_exists($use, $this->templates)) {
-                    throw new IcingaDefinitionException(
-                        sprintf('Object inherits from unknown template "%s"', $use) . print_r($definition)
-                    );
+                    //there may still be an object used instead
+                    print("Template does not exist. Trying a real object.\n");
+                    if (! array_key_exists($use, $this->allDefinitions)) {
+                        print("ERROR: Template '".$use."' does not exist. Fix your configuration.\n");
+                        continue;
+                        //throw new IcingaDefinitionException(
+                        //   sprintf('Object inherits from unknown template "%s"', $use) . print_r($definition)
+                        //);
+                    }
                 }
                 $definition->addParent($this->templates[$use]);
             }
+            print_r("object templates:\n");
+            var_dump($definition->getParents());
         }
     }
 
@@ -380,7 +392,10 @@ class IcingaConfig
                : array();
 
         if (empty($hosts) && empty($hostgroups)) {
-            //var_dump($service); //FIXME lookup the attributes in the template tree?
+            $service_tmpl = $service->getParents();
+
+            print("parents: ".$service."\n");
+            var_dump($service_tmpl); //FIXME lookup the attributes in the template tree?
             return;
         }
         if (empty($hosts) && empty($hostgroups) && $service->isTemplate()) {

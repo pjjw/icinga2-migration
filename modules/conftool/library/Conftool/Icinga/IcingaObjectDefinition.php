@@ -162,7 +162,7 @@ abstract class IcingaObjectDefinition
         }
     }
 
-    public function addParent(IcingaTemplate $parent)
+    public function addParent($parent)
     {
         $this->_parents[] = $parent;
         return $this;
