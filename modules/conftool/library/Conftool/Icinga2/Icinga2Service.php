@@ -14,9 +14,6 @@ class Icinga2Service extends Icinga2ObjectDefinition
 
     protected $v1AttributeMap = array(
         //keep
-        'notes' => 'notes',
-        'notes_url' => 'notes_url',
-        'action_url' => 'action_url',
         'icon_image' => 'icon_image',
         'icon_image_alt' => 'icon_image_alt',
         'max_check_attempts' => 'max_check_attempts',

@@ -6,6 +6,7 @@
 * generate notification objects
 * parents, dependencies, escalations
 * Invalid configuration which is accepted in Icinga 1x (see below)
+* fix duplicated templates
 
 # <a id="special-config"></a> Special configuration
 

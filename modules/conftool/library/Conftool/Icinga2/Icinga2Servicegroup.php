@@ -12,9 +12,6 @@ class Icinga2Servicegroup extends Icinga2ObjectDefinition
 
     protected $v1AttributeMap = array(
         'alias'             => 'display_name',
-        'notes'             => 'notes',
-        'action_url'        => 'action_url',
-        'notes_url'         => 'notes_url',
         'servicegroup_members' => 'groups',
     );
 
