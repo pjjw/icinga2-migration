@@ -374,7 +374,7 @@ class Icinga2ObjectDefinition
         }
         
         return sprintf(
-            "%s %s \"%s\" {\n%s%s%s}\n\n",
+            "%s %s \"%s\" {\n%s%s%s\n%s}\n\n",
             $prefix,
             $this->type,
             $this->name,
