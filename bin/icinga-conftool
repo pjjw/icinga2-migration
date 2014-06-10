@@ -1,0 +1,10 @@
+#!/usr/bin/php
+<?php
+
+use Icinga\Application\Cli;
+
+require_once dirname(__DIR__) . '/library/Icinga/Application/Cli.php';
+Cli::start()->dispatchModule(
+    'conftool',
+    dirname(__DIR__) . '/modules/conftool'
+);

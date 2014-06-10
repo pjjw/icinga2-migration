@@ -1,0 +1,19 @@
+#!/bin/bash
+
+ICINGA2CONF=/tmp/icinga2.conf
+ICINGA2OBJECTS=/tmp/migrate.conf
+ICINGAWEB2BASE=/home/michi/coding/icinga/icingaweb2
+
+# convert
+sudo bin/icinga-conftool migrate v1 /etc/icinga/icinga.cfg > $ICINGA2OBJECTS
+
+cat > $ICINGA2CONF <<EOF
+const PluginDir = "/usr/lib/nagios/plugins"
+include <itl>
+include <plugins>
+
+include "$ICINGA2OBJECTS"
+EOF
+
+# verify config
+/usr/sbin/icinga2 -c $ICINGA2CONF -C
