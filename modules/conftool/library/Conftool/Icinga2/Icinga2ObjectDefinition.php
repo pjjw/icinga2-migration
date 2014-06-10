@@ -219,6 +219,11 @@ class Icinga2ObjectDefinition
         $this->display_name = "\"".$value."\"";
     }
 
+    protected function convertEvent_handler($value)
+    {
+        $this->event_command = "\"".$value."\"";
+    }
+
     protected function convertAction_url($value)
     {
         $this->action_url = "\"".$this->migrateLegacyMacros($value)."\"";
