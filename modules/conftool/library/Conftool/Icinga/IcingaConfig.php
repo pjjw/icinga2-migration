@@ -464,6 +464,12 @@ class IcingaConfig
                 } catch (Exception $e) {
                     echo 'Exception: ',  $e->getMessage(), ' for hostgroup ', $hostgroup, '\n';
                 }
+            } elseif (substr($hostgroup, 0, 1) === '!' && isset($this->definitions['hostgroup'][substr($hostgroup, 1)])) {
+                $assigned = true;
+                $hostgroup = substr($hostgroup, 1);
+                if (! $this->definitions['hostgroup'][$hostgroup]->hasBlacklistedService($service)) {
+                    $this->definitions['hostgroup'][$hostgroup]->blacklistService($service);
+                }
             } else {
                 printf('Cannot assign service "%s" to hostgroup "%s"', $service, $hostgroup);
             }

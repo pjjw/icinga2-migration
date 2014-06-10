@@ -6,6 +6,18 @@ class IcingaHostgroup extends IcingaGroupDefinition
 {
     protected $key = 'hostgroup_name';
     protected $_own_services = array();
+    protected $_not_services = array();
+
+    public function blacklistService(IcingaService $service)
+    {
+        $this->_not_services[$service->service_description] = $service;
+        return $this;
+    }
+
+    public function hasBlacklistedService(IcingaService $service)
+    {
+        return isset($this->_not_services[$service->service_description]);
+    }
 
     public function addService(IcingaService $service)
     {
