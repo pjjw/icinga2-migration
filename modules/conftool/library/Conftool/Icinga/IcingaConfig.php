@@ -370,7 +370,29 @@ class IcingaConfig
         foreach ($this->allDefinitions as $definition) {
             if ($definition instanceof IcingaService) {
                 $this->resolveService($definition);
-                //return;
+            }
+            if ($definition instanceof IcingaHost) {
+                $this->resolveHost($definition);
+            }
+        }
+    }
+
+    protected function resolveHost(IcingaHost $host)
+    {
+        if ($host->isTemplate()) {
+            return;
+        }
+
+        //get the check command from the template tree
+        //otherwise we cannot migrate it later
+        if (! $host->check_command) {
+            $check_command = $this->getObjectAttributeRecursive($host, 'check_command');
+
+            if (! $check_command) {
+                print("//ERROR: Host ".$host." without valid check_command attribute (also not in templates). Assigning 'dummy'.\n");
+                $host->check_command = "dummy";
+            } else {
+                $host->check_command = $check_command;
             }
         }
     }
@@ -383,6 +405,19 @@ class IcingaConfig
         //TODO service templates can be linked too? - NO
         if ($service->isTemplate()) {
             return;
+        }
+
+        //get the check command from the template tree
+        //otherwise we cannot migrate it later
+        if (! $service->check_command) {
+            $check_command = $this->getObjectAttributeRecursive($service, 'check_command');
+
+            if (! $check_command) {
+                print("//ERROR: Service ".$service." without valid check_command attribute (also not in templates). Assigning 'dummy'.\n");
+                $service->check_command = "dummy";
+            } else {
+                $service->check_command = $check_command;
+            }
         }
 
         $hostgroups = $service->hostgroup_name
