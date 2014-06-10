@@ -34,4 +34,14 @@ class Icinga2User extends Icinga2ObjectDefinition
         'address5',
         'address6',
     );
+
+    protected function convertEmail($value)
+    {
+        $this->email = "\"".$value."\"";
+    }
+
+    protected function convertPager($value)
+    {
+        $this->pager = "\"".$value."\"";
+    }
 }

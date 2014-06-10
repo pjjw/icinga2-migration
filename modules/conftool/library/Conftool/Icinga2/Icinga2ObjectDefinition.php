@@ -90,7 +90,7 @@ class Icinga2ObjectDefinition
             if ($key == "check_command" && ($object instanceof IcingaService || $object instanceof IcingaHost)) {
                 $command_arr = explode("!", $value);
 
-                $this->properties['check_command'] = $command_arr[0]; //first is always the command name
+                $this->properties['check_command'] = "\"".$command_arr[0]."\""; //first is always the command name
 
                 for($i = 1; $i < count($command_arr); $i++) {
                     $varname = "ARG".$i;
@@ -98,6 +98,7 @@ class Icinga2ObjectDefinition
                     //TODO check against legacy macros and replace them
                     $this->vars($varname, $varvalue);
                 }
+		continue;
             }
 
             //convert host/service notifications
@@ -176,9 +177,24 @@ class Icinga2ObjectDefinition
         $this->check_interval = $value.'m';
     }
 
+    protected function convertCheck_period($value)
+    {
+        $this->check_period = "\"".$value."\"";
+    }
+
     protected function convertRetry_interval($value)
     {
         $this->retry_interval = $value.'m';
+    }
+
+    protected function convertDisplay_name($value)
+    {
+        $this->display_name = "\"".$value."\"";
+    }
+
+    protected function convertAlias($value)
+    {
+        $this->display_name = "\"".$value."\"";
     }
 
     protected function migrateUseImport($value, $key = null)

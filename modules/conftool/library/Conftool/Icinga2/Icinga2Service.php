@@ -14,17 +14,12 @@ class Icinga2Service extends Icinga2ObjectDefinition
 
     protected $v1AttributeMap = array(
         //keep
-        'display_name' => 'display_name',
         'notes' => 'notes',
         'notes_url' => 'notes_url',
         'action_url' => 'action_url',
         'icon_image' => 'icon_image',
         'icon_image_alt' => 'icon_image_alt',
-        'check_interval' => 'check_interval',
-        'retry_interval' => 'retry_interval',
-        'check_period' => 'check_period',
         'max_check_attempts' => 'max_check_attempts',
-        'check_command' => 'check_command',
         //rename
         'alias' => 'display_name',
         'servicegroups' => 'groups',
