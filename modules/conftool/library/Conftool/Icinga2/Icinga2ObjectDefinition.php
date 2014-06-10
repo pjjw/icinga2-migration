@@ -87,7 +87,7 @@ class Icinga2ObjectDefinition
             }
 
             //check command arguments
-            if ($key == "check_command" && ($object instanceof IcingaService || $object instanceof IcingaHost)) {
+            if ($key == "check_command") {
                 $command_arr = explode("!", $value);
 
                 $this->properties['check_command'] = "\"".$command_arr[0]."\""; //first is always the command name
@@ -95,7 +95,8 @@ class Icinga2ObjectDefinition
                 for($i = 1; $i < count($command_arr); $i++) {
                     $varname = "ARG".$i;
                     $varvalue = addslashes($command_arr[$i]); //escape the string 
-                    //TODO check against legacy macros and replace them
+                    //check against legacy macros and replace them
+		    $varvalue = $this->migrateLegacyMacros($varvalue);
                     $this->vars($varname, $varvalue);
                 }
                 continue;
@@ -182,6 +183,10 @@ class Icinga2ObjectDefinition
             $this->imports("legacy-timeperiod");
         }
 
+        if ($object->getDefinitionType() == "command") {
+            $this->imports("plugin-check-command");
+        }
+
         //custom vars
         foreach ($object->getCustomVars() as $key => $value) {
             $this->vars($key, $value);
@@ -229,6 +234,11 @@ class Icinga2ObjectDefinition
         $this->notes = "\"".$this->migrateLegacyMacros($value)."\"";
     }
 
+    protected function convertIcon_image($value)
+    {
+        $this->icon_image = "\"".$this->migrateLegacyMacros($value)."\"";
+    }
+
     protected function migrateUseImport($value, $key = null)
     {
         if ($key != "use") {
@@ -245,16 +255,20 @@ class Icinga2ObjectDefinition
         if ($key !== null && in_array($key, $this->v1ArrayProperties)) {
             $values = array();
             foreach ($this->splitComma($value) as $value) {
+                //additive is always enabled
+                if (substr($value, 0, 1) === '+') {
+                    $value = substr($value, 1);
+                } 
+		        //TODO: strip exclusions, but fix them somewhere later as blacklisted host
+                if (substr($value, 0, 1) === '!') {
+                    //$value = substr($value, 1);
+                    return;
+                } 
                 $values[] = $this->migrateValue($value);
             }
             return $values;
         }
 
-        //special handling for address
-        if ($key == "address") {
-            return $this->migrateLegacyString($value);
-        }
-        
         if (preg_match('/^\d+/', $value)) {
             return $value;
         }

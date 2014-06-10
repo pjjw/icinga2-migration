@@ -14,7 +14,6 @@ class Icinga2Service extends Icinga2ObjectDefinition
 
     protected $v1AttributeMap = array(
         //keep
-        'icon_image' => 'icon_image',
         'icon_image_alt' => 'icon_image_alt',
         'max_check_attempts' => 'max_check_attempts',
         //rename
@@ -26,7 +25,7 @@ class Icinga2Service extends Icinga2ObjectDefinition
         'event_handler' => 'event_command',
         'low_flap_threshold' => 'flapping_threshold',
         'high_flap_threshold' => 'flapping_threshold',
-        'flap_detection_enabled' => 'enaple_flapping',
+        'flap_detection_enabled' => 'enable_flapping',
         'process_perf_data' => 'enable_perfdata',
         'notifications_enabled' => 'enable_notifications',
         'is_volatile' => 'volatile',
