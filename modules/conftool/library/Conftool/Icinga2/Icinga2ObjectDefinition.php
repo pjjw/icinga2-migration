@@ -72,13 +72,13 @@ class Icinga2ObjectDefinition
             }
 
             //ugly 1.x hacks
-        //these values must be resolved earlier already
+            //these values must be resolved earlier already
             if($this->is_template && ($key == "service_description" || $key == "host_name")) {
                 continue; //skip invalid template attributes
             }
             if (!$this->is_template && $key == "name") {
                 continue; //skip invalid object attributes
-        }
+            }
 
             // template imports
             if ($key == "use") {
@@ -98,10 +98,11 @@ class Icinga2ObjectDefinition
                     //TODO check against legacy macros and replace them
                     $this->vars($varname, $varvalue);
                 }
-        continue;
+                continue;
             }
 
             //convert host/service notifications
+            /*
             if ($key == "contacts" && ($object instanceof IcingaService || $object instanceof IcingaHost)) {
                 $arr = $this->splitComma($value);
 
@@ -142,6 +143,7 @@ class Icinga2ObjectDefinition
 
                 continue;
             }
+             */
 
             //conversion of different attributes
             $func = 'convert' . ucfirst($key);
@@ -150,6 +152,16 @@ class Icinga2ObjectDefinition
                 continue;
             }
 
+            if ($object->getDefinitionType() == "timeperiod") {
+                if (preg_match('/^\d+/', $key)) {
+                    print_r("//ERROR: Timperiod property invalid. Skipping it.\n");
+                    continue;
+                }
+                $key = "ranges.".$key;
+                $this->$key = "\"".$value."\"";
+                continue; //allow remaining items
+            }
+         
             //mapping
             if (! array_key_exists($key, $this->v1AttributeMap)) {
                 throw new Icinga2ConfigMigrationException(
@@ -163,6 +175,11 @@ class Icinga2ObjectDefinition
             if ($value !== null) {
                 $this->{ $this->v1AttributeMap[$key] } = $value;
             }
+        }
+
+        //itl required imports
+        if ($object->getDefinitionType() == "timeperiod") {
+            $this->imports("legacy-timeperiod");
         }
 
         //custom vars
@@ -280,6 +297,11 @@ class Icinga2ObjectDefinition
 
             case 'contactgroup': // TODO: find a better rename way
                 $new = new Icinga2Usergroup($object);
+                $new->setAttributesFromIcingaObjectDefinition($object, $config);
+                break;
+
+            case 'timeperiod':
+                $new = new Icinga2Timeperiod($object);
                 $new->setAttributesFromIcingaObjectDefinition($object, $config);
                 break;
 
@@ -404,6 +426,9 @@ class Icinga2ObjectDefinition
         if ($this->isApply()) {
             $prefix = "apply";
         }
+
+        //print_r("prefix: ".$prefix."\n");
+        //var_dump($this);
         
         return sprintf(
             "%s %s \"%s\" {\n%s%s%s\n%s}\n\n",

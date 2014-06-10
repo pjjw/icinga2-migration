@@ -46,9 +46,14 @@ class MigrateCommand extends Command
             Icinga2ObjectDefinition::fromIcingaObjectDefinition($object, $config)->dump();
         }
 
+        foreach ($config->getDefinitions('timeperiod') as $object) {
+            Icinga2ObjectDefinition::fromIcingaObjectDefinition($object, $config)->dump();
+        }
         //templates
-        foreach($config->getTemplates() as $template) {
+/*
+         foreach($config->getTemplates() as $template) {
             Icinga2ObjectDefinition::fromIcingaObjectDefinition($template, $config)->dump();
         }
+ */
     }
 }
