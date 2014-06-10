@@ -322,8 +322,9 @@ class IcingaConfig
 
     protected function createDefinitionIndex($definition)
     {
-        /* services cannot be indexed as they are not unique */
-        if ($definition instanceof IcingaService) {
+	    /* service objects cannot be indexed as they are not unique
+	     * service templates must be, and can just be indexed */
+        if ($definition instanceof IcingaService && ! $definition->isTemplate()) {
             return;
         }
 
