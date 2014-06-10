@@ -1,16 +1,23 @@
 # <a id="Migration"></a> Migration
 
-## Icinga 1.x to 2.x Migration
-
-Install the Icinga CLI.
+This is a bootstrapped standalone version of the Icinga Web 2 CLI
+module for configuration migration from Icinga 1.x to 2.x.
 
 > **Note**
 >
-> configure/make will be dropped soon.
+> This project will be merged into the upstream CLI once there is
+> a stable release. Meanwhile it acts as standalone helper tool
+> for migrating to Icinga 2.
 
- $ ./configure --prefix=/usr/share/icingaweb --datadir=/usr/share/icingaweb --with-icingaweb-config-path=/etc/icingaweb && sudo make install-basic
+## Requirements
 
-Then call the migrate command action:
+* php5.3+
+* Zend Framework
 
- $ sudo icingacli conftool migrate v1 /etc/icinga/icinga.cfg
+## Icinga 1.x to 2.x Migration
+
+Call the migrate command action pointing to your Icinga 1.x main
+configuration file:
+
+ $ sudo bin/icinga-conftool migrate v1 /etc/icinga/icinga.cfg
 
