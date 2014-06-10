@@ -467,8 +467,6 @@ class IcingaConfig
             if (isset($this->definitions['host'][$host])) {
                 $assigned = true;
                 if (! $this->definitions['host'][$host]->hasService($service)) {
-                    //force relation (could be overridden from template tree)
-                    $service->host_name = (string) $host;
                     $this->definitions['host'][$host]->addService($service);
                 }
             } elseif (substr($host, 0, 1) === '!' && isset($this->definitions['host'][substr($host, 1)])) {

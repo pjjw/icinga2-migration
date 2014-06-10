@@ -63,6 +63,15 @@ class Icinga2ObjectDefinition
         //template, parents and config
         $this->is_template = $object->isTemplate();
         $this->_parents = $object->getParents();
+        $this->_hosts = $object->_hosts;
+        $this->_hostgroups = $object->_hostgroups;
+
+        foreach($object->_hosts as $host) {
+            $this->assignWhere('host.name == "'.$host.'"');
+        }
+        foreach($object->_hostgroups as $hostgroup) {
+            $this->assignWhere('"'.$hostgroup.'" in host.groups');
+        }
 
         foreach ($object->getAttributes() as $key => $value) {
 
@@ -96,7 +105,7 @@ class Icinga2ObjectDefinition
                     $varname = "ARG".$i;
                     $varvalue = addslashes($command_arr[$i]); //escape the string 
                     //check against legacy macros and replace them
-		    $varvalue = $this->migrateLegacyMacros($varvalue);
+                    $varvalue = $this->migrateLegacyMacros($varvalue);
                     $this->vars($varname, $varvalue);
                 }
                 continue;
@@ -265,7 +274,7 @@ class Icinga2ObjectDefinition
                 if (substr($value, 0, 1) === '+') {
                     $value = substr($value, 1);
                 } 
-		        //TODO: strip exclusions, but fix them somewhere later as blacklisted host
+                //TODO: strip exclusions, but fix them somewhere later as blacklisted host
                 if (substr($value, 0, 1) === '!') {
                     //$value = substr($value, 1);
                     return;
