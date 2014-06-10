@@ -72,12 +72,13 @@ class Icinga2ObjectDefinition
             }
 
             //ugly 1.x hacks
+	    //these values must be resolved earlier already
             if($this->is_template && ($key == "service_description" || $key == "host_name")) {
                 continue; //skip invalid template attributes
             }
             if (!$this->is_template && $key == "name") {
                 continue; //skip invalid object attributes
-            }
+	    }
 
             // template imports
             if ($key == "use") {

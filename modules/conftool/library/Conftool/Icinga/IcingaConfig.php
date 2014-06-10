@@ -297,9 +297,9 @@ class IcingaConfig
             foreach ($uses as $use) {
                 if (! array_key_exists($use, $this->templates)) {
                     //there may still be an object used instead
-                    print("Template does not exist. Trying a real object.\n");
+                    print("//Template does not exist. Trying a real object.\n");
                     if (! array_key_exists($use, $this->allDefinitions)) {
-                        print("ERROR: Template '".$use."' does not exist. Fix your configuration.\n");
+                        print("//ERROR: Template '".$use."' does not exist. Fix your configuration.\n");
                         continue;
                         //throw new IcingaDefinitionException(
                         //   sprintf('Object inherits from unknown template "%s"', $use) . print_r($definition)
@@ -308,8 +308,8 @@ class IcingaConfig
                 }
                 $definition->addParent($this->templates[$use]);
             }
-            print_r("object templates:\n");
-            var_dump($definition->getParents());
+            //print_r("object templates:\n");
+            //var_dump($definition->getParents());
         }
     }
 
@@ -375,6 +375,7 @@ class IcingaConfig
         }
     }
 
+
     //TODO this only works if the object has 'host_name' or 'hostgroup_name'
     //but not if that attribute is hidden in the template tree
     protected function resolveService(IcingaService $service)
@@ -391,13 +392,36 @@ class IcingaConfig
                ? $this->splitComma($service->host_name)
                : array();
 
-        if (empty($hosts) && empty($hostgroups)) {
-            $service_tmpl = $service->getParents();
-
-            print("parents: ".$service."\n");
-            var_dump($service_tmpl); //FIXME lookup the attributes in the template tree?
-            return;
+        //check if there are attributes hidden in the template tree
+        //we need to directly assign host_name and hostgroup_name here
+        //v2 cannot easily resolve these attributes
+        if (empty($hosts)) {
+            //print("parents: ".$service."\n");
+            //var_dump($service_tmpl); //FIXME lookup the attributes in the template tree?
+            $hosts = $this->getObjectAttributeRecursive($service, 'host_name');
+            if (! $hosts) {
+                $hosts = array();
+            } else {
+                print_r("Found host_name attribute in template tree: ".$hosts);
+                $service->_hosts = $hosts; //store them for later
+            }
+            //var_dump($hosts);
         }
+        if (empty($hostgroups)) {
+            $hostgroups = $this->getObjectAttributeRecursive($service, 'hostgroup_name');
+            if (! $hostgroups) {
+                $hostgroups = array();
+            } else {
+                $service->_hostgroups = $hostgroups; //store them for later
+            }
+            //var_dump($hostgroups);
+        }
+
+        if (empty($hosts) && empty($hostgroups) && !$service->isTemplate()) {
+            print("Could not find any host or hostgroup_name attribute. Skipping invalid object.");
+            return;          
+        }
+
         if (empty($hosts) && empty($hostgroups) && $service->isTemplate()) {
             return;
         }
@@ -407,6 +431,8 @@ class IcingaConfig
             if (isset($this->definitions['host'][$host])) {
                 $assigned = true;
                 if (! $this->definitions['host'][$host]->hasService($service)) {
+                    //force relation (could be overridden from template tree)
+                    $service->host_name = (string) $host;
                     $this->definitions['host'][$host]->addService($service);
                 }
             } elseif (substr($host, 0, 1) === '!' && isset($this->definitions['host'][substr($host, 1)])) {
@@ -444,6 +470,24 @@ class IcingaConfig
         }
         if (! $assigned) {
             echo 'Unassigned service: ' . print_r($service, 1);
+        }
+    }
+
+    //required for host_name, hostgroup_name, contact{,_group}s lookups
+    protected function getObjectAttributeRecursive($object, $attr)
+    {
+        if ($object->$attr) {
+            return $object->$attr;
+        }
+        
+        $templates = $object->getParents();
+
+        foreach ($templates as $template) {
+            if (!$template->$attr) {
+                $this->getObjectAttributeRecursive($template, $attr);
+            } else {
+                return $template->$attr;
+            }
         }
     }
 
