@@ -93,7 +93,7 @@ class Icinga2ObjectDefinition
 
                 for($i = 1; $i < count($command_arr); $i++) {
                     $varname = "ARG".$i;
-                    $varvalue = $command_arr[$i];
+                    $varvalue = addslashes($command_arr[$i]); //escape the string 
                     //TODO check against legacy macros and replace them
                     $this->vars($varname, $varvalue);
                 }

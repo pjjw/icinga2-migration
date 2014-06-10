@@ -11,11 +11,9 @@ class Icinga2Command extends Icinga2ObjectDefinition
     );
 
     protected function convertCommand_line($line) {
-        //TODO migrate changed runtime macros
-
+	//escape double quotes
         $line = addslashes($line);
 
-        //TODO
         $patterns = array (
             //user
             "\$CONTACTNAME\$" => "\$user.name\$",
@@ -109,7 +107,7 @@ class Icinga2Command extends Icinga2ObjectDefinition
             $line = str_replace($match, $replace, $line);
         }
 
-        //TODO same for $_HOSTFOO$ and $_SERVICEBAR$ as $host.vars.FOO$ and $service.vars.BAR$
+        //same for $_HOSTFOO$ and $_SERVICEBAR$ as $host.vars.FOO$ and $service.vars.BAR$
         $line = preg_replace('/\$_HOST(\w+)\$/', '\$host.vars.$1\$', $line);
         $line = preg_replace('/\$_SERVICE(\w+)\$/', '\service.vars.$1\$', $line);
 
