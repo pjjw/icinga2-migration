@@ -189,6 +189,7 @@ class Icinga2ObjectDefinition
 
         //custom vars
         foreach ($object->getCustomVars() as $key => $value) {
+            $key = substr($key, 1); //drop _
             $this->vars($key, $value);
         }
     }
