@@ -400,8 +400,19 @@ class IcingaConfig
                 if (! $this->definitions['host'][$host]->hasBlacklistedService($service)) {
                     $this->definitions['host'][$host]->blacklistService($service);
                 }
+            } elseif (substr($host, 0, 1) === '*') {
+                //assign service to all hosts
+                foreach ($this->definitions['host'] as $config_host) {
+                    if (! $config_host->hasService($service)) {
+                        $config_host->addService($service);
+                        $assigned = true;
+                        //TODO: this is ugly as f*ck but
+                        //skip further hosts, we'll deal with that rule later in v2
+                        break;
+                    }
+                }
             } else {
-                printf('Cannot assign service "%s" to host "%s"', $service, $host);
+                printf('Cannot assign service "%s" to host "%s"\n"', $service, $host);
             }
         }
         foreach (array_unique($hostgroups) as $hostgroup) {

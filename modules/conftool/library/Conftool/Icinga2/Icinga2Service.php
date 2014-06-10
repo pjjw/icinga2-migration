@@ -91,6 +91,8 @@ class Icinga2Service extends Icinga2ObjectDefinition
             if (substr($hostname, 0, 1) === '!') {
                 $hostname = substr($hostname, 1);
                 $this->ignoreWhere('host.name == ' . $this->migrateLegacyString($hostname));
+            } else if (substr($hostname, 0, 1) === '*') {
+                $this->assignWhere('match("*", host.name)');
             } else {
                 $this->assignWhere('host.name == ' . $this->migrateLegacyString($hostname));
             }
