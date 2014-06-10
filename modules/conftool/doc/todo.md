@@ -1,4 +1,12 @@
 
+
+# <a id="migration-todo"></a> TODOs
+
+* fetch host_name, hostgroup_name, contacts from template parents
+* generate notification objects
+* parents, dependencies, escalations
+* Invalid configuration which is accepted in Icinga 1x (see below)
+
 # <a id="special-config"></a> Special configuration
 
 Currently not supported.
