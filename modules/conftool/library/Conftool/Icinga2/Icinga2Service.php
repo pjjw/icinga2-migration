@@ -76,17 +76,32 @@ class Icinga2Service extends Icinga2ObjectDefinition
     protected function convertHost_name($name)
     {
         $arr = $this->splitComma($name);
-        $this->is_apply = true;
+        $hosts = array();
+        $this->is_apply = false;
 
         foreach ($arr as $hostname) {
             if (substr($hostname, 0, 1) === '!') {
                 $hostname = substr($hostname, 1);
                 $this->ignoreWhere('host.name == ' . $this->migrateLegacyString($hostname));
+                $this->is_apply = true;
             } else if (substr($hostname, 0, 1) === '*') {
                 $this->assignWhere('match("*", host.name)');
+                $this->is_apply = true;
             } else {
-                $this->assignWhere('host.name == ' . $this->migrateLegacyString($hostname));
+                $hosts[] = $hostname;
             }
+        }
+
+        if (substr($name, 0, 1) === '*') {
+            return; //no more actions
+        }
+
+        //assign rule applies?
+        if (count($hosts) > 1) {
+            $this->assignWhere('host.name in ' . $this->renderArray($hosts));
+            $this->is_apply = true;
+        } else {
+            $this->host_name = "\"".$name."\"";
         }
     }
 
