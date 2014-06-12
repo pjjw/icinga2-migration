@@ -23,6 +23,11 @@ class Icinga2ObjectDefinition
     protected $imports = array();
     protected $vars = array();
 
+    //new objects from conversion
+    protected $eventcommands = array();
+    protected $notificationcommands = array();
+    protected $notificationobjects = array();
+
     public function __construct(IcingaObjectDefinition $name)
     {
         $this->name = (string) $name;
@@ -58,6 +63,11 @@ class Icinga2ObjectDefinition
         $this->vars[$varname] = $varvalue;
     }
 
+    protected function eventcommands($name, $line)
+    {
+        $this->eventcommands[$name] = $line;
+    }
+
     protected function setAttributesFromIcingaObjectDefinition(IcingaObjectDefinition $object, IcingaConfig $config)
     {
         //template, parents and config
@@ -83,6 +93,7 @@ class Icinga2ObjectDefinition
             // template imports
             if ($key == "use") {
                 $this->imports = $this->migrateUseImport($value, $key);
+                //DONE
                 continue;
             }
 
@@ -96,9 +107,30 @@ class Icinga2ObjectDefinition
                     $varname = "ARG".$i;
                     $varvalue = addslashes($command_arr[$i]); //escape the string 
                     //check against legacy macros and replace them
-		    $varvalue = $this->migrateLegacyMacros($varvalue);
+                    $varvalue = $this->migrateLegacyMacros($varvalue);
                     $this->vars($varname, $varvalue);
                 }
+                //DONE
+                continue;
+            }
+
+            //event handler translation
+            if ($key == "event_handler") {
+                $eventcommand_prefix = (string) $object;
+
+                if ($object instanceof IcingaHost) {
+                    $eventcommand_prefix = "host-" . $eventcommand_prefix;
+                } else if ($object instanceof IcingaService) {
+                    $eventcommand_prefix = "service-" . $eventcommand_prefix;
+                }
+
+                $eventcommand_obj = $config->getObject($value, 'command');
+                $eventcommand_name = $eventcommand_prefix . "-" . $value;
+                $eventcommand_line = addslashes($eventcommand_obj->command_line);
+                $eventcommand_line = $this->migrateLegacyMacros($eventcommand_line);
+                $this->eventcommands($eventcommand_name, $eventcommand_line);
+                $this->event_command = "\"" . $eventcommand_name . "\"";
+                //DONE
                 continue;
             }
 
@@ -220,11 +252,6 @@ class Icinga2ObjectDefinition
         $this->display_name = "\"".$value."\"";
     }
 
-    protected function convertEvent_handler($value)
-    {
-        $this->event_command = "\"".$value."\"";
-    }
-
     protected function convertAction_url($value)
     {
         $this->action_url = "\"".$this->migrateLegacyMacros($value)."\"";
@@ -265,7 +292,7 @@ class Icinga2ObjectDefinition
                 if (substr($value, 0, 1) === '+') {
                     $value = substr($value, 1);
                 } 
-		        //TODO: strip exclusions, but fix them somewhere later as blacklisted host
+                //TODO: strip exclusions, but fix them somewhere later as blacklisted host
                 if (substr($value, 0, 1) === '!') {
                     //$value = substr($value, 1);
                     return;
@@ -420,6 +447,17 @@ class Icinga2ObjectDefinition
         return $str;
     }
 
+    protected function getEventCommandsAsString() {
+        $str = '';
+        foreach ($this->eventcommands as $command => $line) {
+            $str .= sprintf("object EventCommand \"%s\" {\n", $command);
+            $str .= sprintf("    import \"plugin-event-command\"\n");
+            $str .= sprintf("    command = \"%s\"\n", $line);
+            $str .= sprintf("}\n");
+        }
+        return $str;
+    }
+
     public function isTemplate()
     {
         return $this->is_template;
@@ -451,14 +489,16 @@ class Icinga2ObjectDefinition
         //var_dump($this);
         
         return sprintf(
-            "%s %s \"%s\" {\n%s%s%s\n%s}\n\n",
+            "%s %s \"%s\" {\n%s%s%s\n%s}\n%s\n",
             $prefix,
             $this->type,
             $this->name,
             $this->getImportsAsString(),
             $this->getAttributesAsString(),
             $this->getVarsAsString(),
-            $this->getAssignmentsAsString()
+            $this->getAssignmentsAsString(),
+            //additional objects newly created
+            $this->getEventCommandsAsString()
         );
     }
 

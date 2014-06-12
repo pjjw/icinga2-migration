@@ -20,7 +20,6 @@ class Icinga2Host extends Icinga2ObjectDefinition
         'active_checks_enabled' => 'enable_active_checks',
         'passive_checks_enabled' => 'enable_passive_checks',
         'event_handler_enabled' => 'enable_event_handler',
-        'event_handler' => 'event_command',
         'low_flap_threshold' => 'flapping_threshold',
         'high_flap_threshold' => 'flapping_threshold',
         'flap_detection_enabled' => 'enable_flapping',
