@@ -32,7 +32,8 @@ ICINGA2CONF=/tmp/icinga2.conf
 ICINGA2OBJECTS=/tmp/migrate.conf
 ICINGA2BIN=/usr/sbin/icinga2
 
-DEBUG="-x debug"
+DEBUG=""
+#DEBUG="-x debug"
 GDB=""
 #GDB="gdb --args"
 
