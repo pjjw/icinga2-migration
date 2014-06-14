@@ -760,7 +760,7 @@ class Icinga2ObjectDefinition
         $str = '';
         foreach ($this->eventcommands as $command => $line) {
             $str .= sprintf("\nobject EventCommand \"%s\" {\n", $command);
-            $str .= sprintf("    import \"plugin-event-command\"\n");
+            $str .= sprintf("    import \"migration-event-command\"\n");
             $str .= sprintf("    command = \"%s\"\n", $line);
             $str .= sprintf("}\n");
         }
@@ -771,7 +771,7 @@ class Icinga2ObjectDefinition
         $str = '';
         foreach ($this->notificationcommands as $command => $line) {
             $str .= sprintf("\nobject NotificationCommand \"%s\" {\n", $command);
-            $str .= sprintf("    import \"plugin-notification-command\"\n");
+            $str .= sprintf("    import \"migration-notification-command\"\n");
             $str .= sprintf("    command = \"%s\"\n", $line);
             $str .= sprintf("}\n\n");
         }
@@ -958,6 +958,23 @@ object NotificationCommand "generic-escalation-dummy" {
     import "plugin-notification-command"
     command = "echo \"This escalation needs a proper notification command. Please FIXME.\""
 }
+
+object CheckCommand "migration-check-command" {
+    import "plugin-check-command"
+    vars.USER1 = PluginDir
+}
+
+object EventCommand "migration-event-command" {
+    import "plugin-event-command"
+    vars.USER1 = PluginDir
+}
+
+object NotificationCommand "migration-notification-command" {
+    import "plugin-notification-command"
+    vars.USER1 = PluginDir
+}
+
+
 //MIGRATION DEFAULT TEMPLATES -- END
 
 ');

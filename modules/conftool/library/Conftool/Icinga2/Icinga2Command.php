@@ -44,6 +44,8 @@ class Icinga2Command extends Icinga2ObjectDefinition
 	$line = $this->migrateLegacyMacros($line);
 
         $this->properties['command'] = "\"".$line."\"";
+
+	$this->imports[] = "migration-check-command";
         return $line;
     }
 }
