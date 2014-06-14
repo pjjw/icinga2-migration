@@ -333,7 +333,7 @@ class IcingaConfig
         } catch(Exception $e) {
             echo 'Exception: ',  $e->getMessage(), '\n';
         }
-        
+
         $type = $definition->getDefinitionType();
         if (isset($this->definitions[$type][$id])) {
             throw new IcingaConfigException(sprintf(
@@ -455,7 +455,7 @@ class IcingaConfig
 
         if (empty($hosts) && empty($hostgroups) && !$service->isTemplate()) {
             print("Could not find any host or hostgroup_name attribute. Skipping invalid object.");
-            return;          
+            return;
         }
 
         if (empty($hosts) && empty($hostgroups) && $service->isTemplate()) {
@@ -467,8 +467,8 @@ class IcingaConfig
             if (isset($this->definitions['host'][$host])) {
                 $assigned = true;
                 if (! $this->definitions['host'][$host]->hasService($service)) {
-                    //force relation (could be overridden from template tree)
-                    $service->host_name = (string) $host;
+                    //relation must be force on migration task! see MigrateCommand.php (ugly TODO)
+                    //$service->host_name = (string) $host;
                     $this->definitions['host'][$host]->addService($service);
                 }
             } elseif (substr($host, 0, 1) === '!' && isset($this->definitions['host'][substr($host, 1)])) {
@@ -521,7 +521,7 @@ class IcingaConfig
         if ($object->$attr) {
             return $object->$attr;
         }
-        
+
         $templates = $object->getParents();
 
         foreach ($templates as $template) {
@@ -634,4 +634,3 @@ class IcingaConfig
         $this->definition_files[$file] = $file;
     }
 }
-

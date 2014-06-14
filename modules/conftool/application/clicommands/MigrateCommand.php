@@ -10,7 +10,7 @@ class MigrateCommand extends Command
 {
     public function v1Action()
     {
-        $start = time();
+        $start = microtime(true);
 
         printf("//---------------------------------------------------\n");
         printf("//Migrate Icinga 1.x configuration to Icinga 2 format\n");
@@ -39,6 +39,7 @@ class MigrateCommand extends Command
             if (count($object->getServices()) > 0) {
                 printf("//---- MIGRATE HOST SERVICES -- BEGIN\n");
                 foreach($object->getServices() as $service) {
+                    $service->host_name = $object; //force relation
                     Icinga2ObjectDefinition::fromIcingaObjectDefinition($service, $config)->dump();
                 }
                 printf("//---- MIGRATE HOST SERVICES -- END\n");
@@ -67,6 +68,7 @@ class MigrateCommand extends Command
             if (count($object->getServices()) > 0) {
                 printf("//---- MIGRATE HOSTGROUP SERVICES -- BEGIN\n");
                 foreach($object->getServices() as $service) {
+                    $service->hostgroup_name = $object; //force relation
                     Icinga2ObjectDefinition::fromIcingaObjectDefinition($service, $config)->dump();
                 }
                 printf("//---- MIGRATE HOSTGROUP SERVICES -- END\n");
@@ -92,13 +94,13 @@ class MigrateCommand extends Command
         }
         printf("//MIGRATE TIMEPERIODS -- END\n");
 
-        $end = time();
+        $end = microtime(true);
         $runtime = $end - $start;
 
         printf("//---------------------------------------------------\n");
         printf("//FINISHED :-)\n");
         printf("//End time: " . date("Y-m-d H:i:s") . "\n");
-        printf("//Runtime: " . $runtime . "\n");
+        printf("//Runtime: " . (float)$runtime . "\n");
         printf("//---------------------------------------------------\n");
 
     }
