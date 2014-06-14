@@ -74,15 +74,4 @@ class Icinga2Host extends Icinga2ObjectDefinition
             // TODO: create a new host dependency
         }
     }
-
-    protected function convertContacts($contacts)
-    {
-        //var_dump($this->_config);
-        // TODO: create notification objects and commands
-    }
-
-    protected function convertContact_groups($contactgroups)
-    {
-        // TODO: create notification objects and commands
-    }
 }

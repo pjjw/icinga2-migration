@@ -58,20 +58,6 @@ class Icinga2Service extends Icinga2ObjectDefinition
     // - notification_interval, first_notification_delay, notification_period, notification_options
     // in a new notification object
 
-    // TODO
-    protected function convertContacts($contacts)
-    {
-    }
-
-    protected function convertContact_groups($contactgroups)
-    {
-    }
-
-    protected function convertCheck_command($command) {
-        //TODO migrate command arguments
-        //bla!$SERVICEDESC$... - fix vars as runtime macros
-    }
-
     protected function convertHost_name($name)
     {
         $arr = $this->splitComma($name);

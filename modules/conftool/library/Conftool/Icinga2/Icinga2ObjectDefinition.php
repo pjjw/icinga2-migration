@@ -27,6 +27,7 @@ class Icinga2ObjectDefinition
     protected $eventcommands = array();
     protected $notificationcommands = array();
     protected $notificationobjects = array();
+    protected $notifications = array();
 
     public function __construct(IcingaObjectDefinition $name)
     {
@@ -68,11 +69,24 @@ class Icinga2ObjectDefinition
         $this->eventcommands[$name] = $line;
     }
 
+    protected function notificationcommands($name, $line)
+    {
+        $this->notificationcommands[$name] = $line;
+    }
+
+    protected function notifications($name, $attr)
+    {
+        $this->notifications[$name] = $attr;
+    }
+
     protected function setAttributesFromIcingaObjectDefinition(IcingaObjectDefinition $object, IcingaConfig $config)
     {
         //template, parents and config
         $this->is_template = $object->isTemplate();
         $this->_parents = $object->getParents();
+
+        $all_contacts = array();
+        $all_contactgroups = array();
 
         foreach ($object->getAttributes() as $key => $value) {
 
@@ -105,7 +119,7 @@ class Icinga2ObjectDefinition
 
                 for($i = 1; $i < count($command_arr); $i++) {
                     $varname = "ARG".$i;
-                    $varvalue = addslashes($command_arr[$i]); //escape the string 
+                    $varvalue = addslashes($command_arr[$i]); //escape the string
                     //check against legacy macros and replace them
                     $varvalue = $this->migrateLegacyMacros($varvalue);
                     $this->vars($varname, $varvalue);
@@ -135,48 +149,44 @@ class Icinga2ObjectDefinition
             }
 
             //convert host/service notifications
-            /*
             if ($key == "contacts" && ($object instanceof IcingaService || $object instanceof IcingaHost)) {
-                $arr = $this->splitComma($value);
 
-                //var_dump($object);
-                //var_dump($arr);
-
-                foreach ($arr as $contact) {
-
-                    //strip additive character
-                    $name = preg_replace('/^\+/', '', $contact);
-                    $contact_obj = $config->GetObject($name, 'contact');
-
-                    if ($contact_obj == false) {
-                        print("Unknown contact '" . $name . "' referenced by object '" . $this->name . "'.");
-                        continue;
-                    }
-
-                    //var_dump($contact_obj);
-
-                    //TODO
-                    //1. host|service_notification_commands in contact template tree?
-                    //2. split array, get commands
-                    //3. add new notification objects based on "hostname-servicename-commandname"
-                    //4. add attributes: users, converted options, interval
+                //skip templates
+                if ($this->isTemplate()) {
+                    continue;
                 }
+
+                $contacts = $this->splitComma($value);
+
+                foreach($contacts as $contact) {
+                    $all_contacts[] = $contact;
+                }
+
+                //TODO recursive lookup in templates
+                printf("//Found contacts attribute: %s on object %s\n", $value, $object);
 
                 continue;
             }
 
             if ($key == "contact_groups" && ($object instanceof IcingaService || $object instanceof IcingaHost)) {
-                $arr = $this->splitComma($value);
 
-                foreach ($arr as $contactgroup) {
-                    $contactgroup_obj = $config->GetObject($contactgroup, 'contactgroup');
-
-                    //var_dump($contactgroup_obj);
+                //skip templates
+                if ($this->isTemplate()) {
+                    continue;
                 }
+
+                $contactgroups = $this->splitComma($value);
+
+                foreach ($contactgroups as $contactgroup) {
+                    $all_contactgroups[] = $contactgroup;
+                }
+
+                printf("//Found contact_groups attribute: %s on object %s\n", $value, $object);
+
+                //TODO recursive lookup in templates
 
                 continue;
             }
-             */
 
             //conversion of different attributes
             $func = 'convert' . ucfirst($key);
@@ -194,7 +204,7 @@ class Icinga2ObjectDefinition
                 $this->$key = "\"".$value."\"";
                 continue; //allow remaining items
             }
-         
+
             //mapping
             if (! array_key_exists($key, $this->v1AttributeMap)) {
                 throw new Icinga2ConfigMigrationException(
@@ -209,6 +219,142 @@ class Icinga2ObjectDefinition
                 $this->{ $this->v1AttributeMap[$key] } = $value;
             }
         }
+
+        if ($object instanceof IcingaService || $object instanceof IcingaHost) {
+
+            //var_dump($all_contactgroups);
+            //var_dump($all_contacts);
+
+            //contacts -> notifications
+            $all_contactgroups = array_unique($all_contactgroups);
+
+            if (count($all_contactgroups) > 0) {
+                printf("//Found contact_groups: %s\n", $this->arrayToString($all_contactgroups));
+            }
+
+            //fetch all contactgroup members as string
+            foreach ($all_contactgroups as $contactgroup) {
+                trim($contactgroup);
+                $contact_objs = $config->getObjectsByAttributeValue('contactgroups', $contactgroup, 'contact');
+                //gosh i love these attributes. contact->contactgroups, but host->contact_groups - WTF?!?
+
+                //no contacts with 'contactgroups' attribute, try the group members instead.
+                if (count($contact_objs) == 0) {
+                    $contactgroup_obj = $config->getObject($contactgroup, 'contactgroup');
+                    $contact_objs = $this->splitComma($contactgroup_obj->members);
+                }
+
+                foreach ($contact_objs as $contact_obj) {
+                    $all_contacts[] = (string) $contact_obj;
+                }
+            }
+
+            //make sure that only unique contacts exist, we do not need too much duplicated notifications
+            $all_contacts = array_unique($all_contacts);
+
+            if (count($all_contacts) > 0) {
+                printf("//Found contacts: %s\n", $this->arrayToString($all_contacts));
+            }
+
+            foreach ($all_contacts as $contact) {
+
+                //strip additive character
+                $name = preg_replace('/^\+/', '', $contact);
+                trim($name);
+
+                $contact_obj = $config->GetObject($name, 'contact');
+
+                if ($contact_obj == false) {
+                    print("//ERROR: Unknown contact '" . $name . "' referenced by object '" . $object . "'.");
+                    continue;
+                }
+
+                //HOST NOTIFICATIONS
+                if ($object instanceof IcingaHost) {
+                    $host_notification_commands = $this->splitComma($contact_obj->host_notification_commands);
+
+                    foreach ($host_notification_commands as $host_notification_command) {
+                        trim($host_notification_command);
+
+                        //get the command line
+                        $host_notification_command_line = $config->getObject($host_notification_command, 'command');
+                        //generate a unique notification command name
+                        $host_notification_command_name = "host-" . (string) $object . "-notification-command-" . $host_notification_command;
+
+                        //create a new notification command
+                        $this->notificationcommands($host_notification_command_name, $host_notification_command_line);
+
+                        //create a new host notification object
+                        $notification_object_name = "notification-".$host_notification_command_name;
+                        $notification_object_attr = array (
+                            'users' => array( $contact ),
+                            'import' => 'generic-host-notification',
+                            'period' => $object->notification_period,
+                            'interval' => $object->notification_interval,
+                            'command' => $host_notification_command_name,
+                            'host_name' => (string) $object
+                        );
+                        //TODO migrate notification_options
+
+                        $this->notifications($notification_object_name, $notification_object_attr);
+
+                    }
+                }
+
+                //SERVICE NOTIFICATION
+                if ($object instanceof IcingaService) {
+                    $service_notification_commands = $this->splitComma($contact_obj->service_notification_commands);
+
+                    foreach ($service_notification_commands as $service_notification_command) {
+                        trim($service_notification_command);
+
+                        if ($object->host_name) {
+                            $prefix = "host-" . $object->host_name;
+                        } else { //some random madness
+                            $prefix = substr(str_shuffle(md5(time())),0,10); //length 10 is sufficient
+                        }
+
+                        //get the command line
+                        $service_notification_command_line = $config->getObject($service_notification_command, 'command');
+                        //generate a unique notification command name //TODO that's not really clear for services only, being non unique by their name - get hostname/group?
+                        $service_notification_command_name = $prefix . "-service-" . (string) $object . "-notification-command-" . $service_notification_command;
+
+                        //create a new notification command
+                        $this->notificationcommands($service_notification_command_name, $service_notification_command_line);
+
+                        //create a new host notification object
+                        $notification_object_name = "notification-".$service_notification_command_name;
+                        $notification_object_attr = array (
+                            'users' => array( $contact ),
+                            'import' => 'generic-service-notification',
+                            'period' => $object->notification_period,
+                            'interval' => $object->notification_interval,
+                            'command' => $service_notification_command_name
+                        );
+
+                        if ($object->host_name) {
+                            $notification_object_attr['host_name'] = $object->host_name;
+                            $notification_object_attr['service_name'] = (string) $object;
+                        } else {
+                            //if there is no direct relation, we need to specify the service.name as additional assign rule
+                            $notification_object_attr['service_assign'] = (string) $object;
+                        }
+
+                        //TODO migrate notification_options
+
+                        $this->notifications($notification_object_name, $notification_object_attr);
+
+                    }
+                }
+            }
+        }
+
+        //make sure we have unique notification commands (and also notifications, even if not that accurate TODO)
+        $this->notificationcommands = array_unique($this->notificationcommands);
+        $this->notifications = array_unique($this->notifications);
+        //end host/service notifications
+
+
 
         //itl required imports
         if ($object->getDefinitionType() == "timeperiod") {
@@ -291,12 +437,12 @@ class Icinga2ObjectDefinition
                 //additive is always enabled
                 if (substr($value, 0, 1) === '+') {
                     $value = substr($value, 1);
-                } 
+                }
                 //TODO: strip exclusions, but fix them somewhere later as blacklisted host
                 if (substr($value, 0, 1) === '!') {
                     //$value = substr($value, 1);
                     return;
-                } 
+                }
                 $values[] = $this->migrateValue($value);
             }
             return $values;
@@ -450,11 +596,71 @@ class Icinga2ObjectDefinition
     protected function getEventCommandsAsString() {
         $str = '';
         foreach ($this->eventcommands as $command => $line) {
-            $str .= sprintf("object EventCommand \"%s\" {\n", $command);
+            $str .= sprintf("\nobject EventCommand \"%s\" {\n", $command);
             $str .= sprintf("    import \"plugin-event-command\"\n");
             $str .= sprintf("    command = \"%s\"\n", $line);
             $str .= sprintf("}\n");
         }
+        return $str;
+    }
+
+    protected function getNotificationCommandsAsString() {
+        $str = '';
+        foreach ($this->notificationcommands as $command => $line) {
+            $str .= sprintf("\nobject NotificationCommand \"%s\" {\n", $command);
+            $str .= sprintf("    import \"plugin-notification-command\"\n");
+            $str .= sprintf("    command = \"%s\"\n", $line);
+            $str .= sprintf("}\n\n");
+        }
+        return $str;
+    }
+
+    protected function getNotificationsAsString() {
+        $str = sprintf("//MIGRATION - NOTIFICATIONS (NEW) -- BEGIN\n");
+        foreach ($this->notifications as $notification_name => $notification_attr) {
+
+            //workaround for unspecified services (no direct host_name)
+            $apply_target = "";
+            if (array_key_exists('host_name', $notification_attr)) {
+                $obj_type = "object";
+            } else {
+                $obj_type = "apply";
+                $apply_target = "to Service ";
+            }
+
+            $str .= sprintf("\n%s Notification \"%s\" %s{\n", $obj_type, $notification_name, $apply_target);
+            $str .= sprintf("    import \"%s\"\n", $notification_attr['import']);
+            $str .= sprintf("    command = \"%s\"\n", $notification_attr['command']);
+            $str .= sprintf("    period = \"%s\"\n", $notification_attr['period']);
+            $str .= sprintf("    interval = %s\n", ((int)$notification_attr['interval']).'m');
+
+            $str .= sprintf("    users = %s\n", $this->renderArray($notification_attr['users']));
+
+            //host notification
+            if (array_key_exists('host_name', $notification_attr) && !array_key_exists('service_name', $notification_attr)) {
+                $str .= sprintf("    host_name = \"%s\"\n", $notification_attr['host_name']);
+            }
+
+            //service notification
+            else if (array_key_exists('host_name', $notification_attr) && array_key_exists('service_name', $notification_attr)) {
+                $str .= sprintf("    host_name = \"%s\"\n", $notification_attr['host_name']);
+                $str .= sprintf("    service_name = \"%s\"\n", $notification_attr['service_name']);
+            }
+
+            //no direct specification, do something magic with apply
+            else {
+                if ($obj_type == "apply") {
+                    if (array_key_exists('service_assign', $notification_attr)) {
+                        $str .= sprintf("    assign where %s\n", $notification_attr['service_assign']);
+                    }
+                    $this->getAssignmentsAsString();
+                }
+            }
+
+            $str .= sprintf("}\n\n");
+        }
+
+        $str .= sprintf("//MIGRATION - NOTIFICATIONS (NEW) -- END\n");
         return $str;
     }
 
@@ -487,9 +693,9 @@ class Icinga2ObjectDefinition
 
         //print_r("prefix: ".$prefix."\n");
         //var_dump($this);
-        
+
         return sprintf(
-            "%s %s \"%s\" {\n%s%s%s\n%s}\n%s\n",
+            "%s %s \"%s\" {\n%s%s%s\n%s}\n%s\n%s\n%s\n",
             $prefix,
             $this->type,
             $this->name,
@@ -498,13 +704,41 @@ class Icinga2ObjectDefinition
             $this->getVarsAsString(),
             $this->getAssignmentsAsString(),
             //additional objects newly created
-            $this->getEventCommandsAsString()
+            $this->getEventCommandsAsString(),
+            $this->getNotificationCommandsAsString(),
+            $this->getNotificationsAsString()
         );
     }
 
     public function dump()
     {
         echo $this->__toString();
+    }
+
+    public static function dumpDefaultTemplates()
+    {
+            printf('
+//MIGRATION DEFAULT TEMPLATES -- BEGIN
+template Notification "generic-host-notification" {
+  states = [ Up, Down ]
+  types = [ Problem, Acknowledgement, Recovery, Custom,
+            FlappingStart, FlappingEnd,
+            DowntimeStart, DowntimeEnd, DowntimeRemoved ]
+
+  period = "24x7"
+}
+
+template Notification "generic-service-notification" {
+  states = [ OK, Warning, Critical, Unknown ]
+  types = [ Problem, Acknowledgement, Recovery, Custom,
+            FlappingStart, FlappingEnd,
+            DowntimeStart, DowntimeEnd, DowntimeRemoved ]
+
+  period = "24x7"
+}
+//MIGRATION DEFAULT TEMPLATES -- END
+
+');
     }
 
     public function migrateLegacyMacros($line)
@@ -608,9 +842,7 @@ class Icinga2ObjectDefinition
 
         //TODO if there is still a $...$ string in there, warn the user.
         //EVENTSTARTTIME
-    
+
         return $line;
     }
 }
-
-

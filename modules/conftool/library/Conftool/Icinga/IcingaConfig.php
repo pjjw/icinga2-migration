@@ -586,6 +586,18 @@ class IcingaConfig
         return false;
     }
 
+    public function getObjectsByAttributeValue($search_attr_name, $search_attr_value, $type)
+    {
+        $arr = array();
+        foreach ($this->definitions[$type] as $definition) {
+            if ($definition->$search_attr_name == $search_attr_value) {
+                $array[] = $definition;
+            }
+        }
+
+        return $arr;
+    }
+
     protected function discoverDefinitionFiles($dir)
     {
         $files = array();
