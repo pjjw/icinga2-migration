@@ -22,28 +22,39 @@ module for configuration migration from Icinga 1.x to 2.x.
 > a stable release. Meanwhile it acts as standalone helper tool
 > for migrating to Icinga 2.
 
-## Requirements
+### Requirements
 
 * PHP CLI >= 5.3.x
 * PHP Zend Framework
 
 Debian requires the `zendframework` package installed.
-RHEL/CentOS requires the EPEL repository enabled (which provides the `php-ZendFramework`
-package). OpenSUSE requires the [server monitoring](https://build.opensuse.org/project/show/server:monitoring) repository (which provides the `php5-ZendFramework` package) enabled.
+RHEL/CentOS requires the EPEL repository which provides the `php-ZendFramework`
+package.
+OpenSUSE requires the [server monitoring](https://build.opensuse.org/project/show/server:monitoring)
+repository which provides the `php5-ZendFramework` package.
 
-## Icinga 1.x to 2.x Migration
+### Run
 
 Call the migrate command action pointing to your Icinga 1.x main
 configuration file and pipe the output to a file included in your
 Icinga 2 configuration:
 
- $ sudo bin/icinga-conftool migrate v1 /etc/icinga/icinga.cfg > /tmp/migrate.conf
+ $ bin/icinga-conftool migrate v1 /etc/icinga/icinga.cfg > /etc/icinga2/migrate.conf
 
-An example for validating the generated objects against a bootstrapped icinga2
+Make sure that your user can access the `icinga.cfg` file and all included
+directories and files (`cfg_file`, `cfg_dir` attributes in `icinga.cfg`).
+
+An example for validating the generated objects with a bootstrapped icinga2
 config is located in `bin/run`.
 
+### Support
 
-## Manual Migration Required
+If you encounter bugs, or have patches, please join the community
+support channels at https://support.icinga.org
+
+## Additional Migration Hints
+
+### Manual Migration Required
 
 These Icinga 1.x specifics are not supported:
 
@@ -55,7 +66,7 @@ These Icinga 1.x specifics are not supported:
 * Deprecated attributes and objects ({host,service}extinfo, etc)
 
 
-## Automatic Migration
+### Automatic Migration
 
 This is by far an imcomplete list, but shows the general approach of
 this migration script:
@@ -91,7 +102,7 @@ this migration script:
   timeperiod    | TimePeriod						| only basic
   command       | CheckCommand, NotificationCommand, EventCommand	| cleanup required
 
-### Templates
+#### Templates
 
   Template / Command		| Purpose
   ------------------------------|------------------------------
