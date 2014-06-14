@@ -50,6 +50,7 @@ class Icinga2ObjectDefinition
     protected $ignores = array();
     protected $imports = array();
     protected $vars = array();
+    protected $times = array(); //required for escalation notifications
 
     //new objects from conversion
     protected $eventcommands = array();
@@ -727,6 +728,14 @@ class Icinga2ObjectDefinition
         return $str;
     }
 
+    protected function getTimesAsString() {
+        $str = '';
+        foreach ($this->times as $key => $val) {
+            $str .= sprintf("    times.%s = %s\n", $key, $val);
+        }
+        return $str;
+    }
+
     protected function getImportsAsString() {
         $str = '';
         foreach ($this->imports as $import) {
@@ -797,6 +806,8 @@ class Icinga2ObjectDefinition
             $str .= sprintf("    types = %s\n", $this->arrayToString($notification_attr['types'])); //constants, no strings
 
             $str .= sprintf("    users = %s\n", $this->renderArray($notification_attr['users'])); //double quoted strings
+
+            $str .= $this->getTimesAsString();
 
             //host notification
             if (array_key_exists('host_name', $notification_attr) && !array_key_exists('service_name', $notification_attr)) {
@@ -892,7 +903,7 @@ class Icinga2ObjectDefinition
 
         $str = '';
         $str .= sprintf(
-            "\n%s %s \"%s\" %s{\n%s%s%s\n%s}\n",
+            "\n%s %s \"%s\" %s{\n%s%s%s\n%s\n%s}\n",
             $prefix,
             $this->type,
             $this->name,
@@ -900,6 +911,7 @@ class Icinga2ObjectDefinition
             $this->getImportsAsString(),
             $this->getAttributesAsString(),
             $this->getVarsAsString(),
+            $this->getTimesAsString(),
             $this->getAssignmentsAsString()
         );
 
@@ -940,6 +952,11 @@ template Notification "generic-service-notification" {
             DowntimeStart, DowntimeEnd, DowntimeRemoved ]
 
   period = "24x7"
+}
+
+object NotificationCommand "generic-escalation-dummy" {
+    import "plugin-notification-command"
+    command = "echo \"This escalation needs a proper notification command. Please FIXME.\""
 }
 //MIGRATION DEFAULT TEMPLATES -- END
 

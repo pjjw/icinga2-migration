@@ -117,7 +117,14 @@ command objects serve as Check command, and may require cleanup afterwards.
 
 The parent `hostgroup_name` is not supported. Migrate this dependency
 manually. The `host_name` attribute cannot contrain multiple entries, only
-the first one will be processed.
+the first one will be processed. `inherits_parent` is ignored, default
+is enabled.
+
+## Escalations
+
+The `generic-escalation-dummy` command acts as placeholder for a proper
+notification command. There is no way to automagically get the right
+notification command from the assigned contacts and contactgroups.
 
 ## Timeperiods
 

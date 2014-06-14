@@ -47,7 +47,7 @@ class Icinga2Dependency extends Icinga2ObjectDefinition
     }
 
     protected function convertExecution_failure_criteria($value) {
-        $this->states = "[ Ok ]"; //FIXME
+        $this->states = "[ OK ]"; //FIXME
 
         $this->disable_checks = "true"; //FIXME
     }
@@ -74,9 +74,9 @@ class Icinga2Dependency extends Icinga2ObjectDefinition
         foreach ($arr as $hostname) {
             if (substr($hostname, 0, 1) === '!') {
                 $hostname = substr($hostname, 1);
-                $this->ignoreWhere($this->migrateLegacyString($hostname) . ' in host.name');
+                $this->ignoreWhere('host.name == '.$this->migrateLegacyString($hostname));
             } else {
-                $this->assignWhere($this->migrateLegacyString($hostname) . ' in host.name');
+                $this->assignWhere('host.name == '.$this->migrateLegacyString($hostname));
             }
         }
     }
@@ -100,13 +100,14 @@ class Icinga2Dependency extends Icinga2ObjectDefinition
     protected function convertDependent_service_description($value) {
         $arr = $this->splitComma($value);
         $this->is_apply = true;
+        $this->apply_target = "Service";
 
         foreach ($arr as $servicename) {
             if (substr($servicename, 0, 1) === '!') {
                 $servicename = substr($servicename, 1);
-                $this->ignoreWhere($this->migrateLegacyString($servicename) . ' in service.name');
+                $this->ignoreWhere('service.name == '.$this->migrateLegacyString($servicename));
             } else {
-                $this->assignWhere($this->migrateLegacyString($servicename) . ' in service.name');
+                $this->assignWhere('service.name == '.$this->migrateLegacyString($servicename));
             }
         }
     }
@@ -115,6 +116,7 @@ class Icinga2Dependency extends Icinga2ObjectDefinition
     protected function convertDependent_servicegroup_name($value) {
         $arr = $this->splitComma($value);
         $this->is_apply = true;
+        $this->apply_target = "Service";
 
         foreach ($arr as $servicegroupname) {
             if (substr($servicegroupname, 0, 1) === '!') {
