@@ -31,5 +31,17 @@ namespace Icinga\Module\Conftool\Icinga;
 
 class IcingaHostDependency extends IcingaObjectDefinition
 {
-    //protected $key = ''; //dummy
+    protected $key = ''; //dummy
+    protected $name;
+
+    public function __construct($props)
+    {
+        //generate a unique id for this object without a unique string identifier
+        $this->name = uniqid();
+        $this->props = (object) array();
+        foreach ($props as $k => $v) {
+            $this->$k = $v;
+        }
+    }
+
 }

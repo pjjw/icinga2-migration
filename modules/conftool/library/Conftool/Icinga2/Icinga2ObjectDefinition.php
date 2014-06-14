@@ -45,6 +45,7 @@ class Icinga2ObjectDefinition
     protected $_parents = array();
     protected $is_template = false;
     protected $is_apply = false;
+    protected $apply_target = "Host";
     protected $assigns = array();
     protected $ignores = array();
     protected $imports = array();
@@ -877,11 +878,13 @@ class Icinga2ObjectDefinition
     public function __toString()
     {
         $prefix = "object";
+        $target = "";
         if ($this->isTemplate()) {
             $prefix = "template";
         }
         if ($this->isApply()) {
             $prefix = "apply";
+            $target = "to ". $this->apply_target . " ";
         }
 
         //print_r("prefix: ".$prefix."\n");
@@ -889,10 +892,11 @@ class Icinga2ObjectDefinition
 
         $str = '';
         $str .= sprintf(
-            "\n%s %s \"%s\" {\n%s%s%s\n%s}\n",
+            "\n%s %s \"%s\" %s{\n%s%s%s\n%s}\n",
             $prefix,
             $this->type,
             $this->name,
+            $target,
             $this->getImportsAsString(),
             $this->getAttributesAsString(),
             $this->getVarsAsString(),

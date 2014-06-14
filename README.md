@@ -79,6 +79,8 @@ this migration script:
 * Replace runtime macros in notes, notes_url, action_url, icon_image attributes
 * Migrate host parents into simple host dependencies
 * Treat all intervals as minute duration literal - append `m`
+* Exclusions in service->hostgroup and group membership assignments
+* Turn * (all) into a match function in expressions
 * All comma separated lists are converted into arrays, if possible (except contacts for notifications)
 
   Icinga 1.x 	| Icinga 2.x						| Specialities
@@ -111,3 +113,12 @@ relations!
 Event and Notification commands will be added once used. The Icinga 1.x
 command objects serve as Check command, and may require cleanup afterwards.
 
+## Dependencies
+
+The parent `hostgroup_name` is not supported. Migrate this dependency
+manually. The `host_name` attribute cannot contrain multiple entries, only
+the first one will be processed.
+
+## Timeperiods
+
+Complex timeperiod strings are not processed and will result in a warning.

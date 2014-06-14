@@ -240,12 +240,12 @@ class IcingaConfig
                 continue;
             }
             // TODO: How to handle missing key?
-            if ($current_type == 'hostescalation') continue;
-            if ($current_type == 'serviceescalation') continue;
+            //if ($current_type == 'hostescalation') continue;
+            //if ($current_type == 'serviceescalation') continue;
             if ($current_type == 'hostextinfo') continue;
             if ($current_type == 'serviceextinfo') continue;
-            if ($current_type == 'hostdependency') continue;
-            if ($current_type == 'servicedependency') continue;
+            //if ($current_type == 'hostdependency') continue;
+            //if ($current_type == 'servicedependency') continue;
             $this->addDefinition(
                 IcingaObjectDefinition::factory($current_type, $vals)
             );
@@ -355,6 +355,7 @@ class IcingaConfig
             return;
         }
 
+        //use the unique name as id
         try {
             $id = (string) $definition;
         } catch(Exception $e) {

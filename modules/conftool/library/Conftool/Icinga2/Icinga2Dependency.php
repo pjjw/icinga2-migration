@@ -37,7 +37,92 @@ class Icinga2Dependency extends Icinga2ObjectDefinition
         //
     );
 
-    protected function convertDependency_line($line) {
+    protected $v1RejectedAttributeMap = array(
+        'hostgroup_name',
+        'inherits_parent'
+    );
 
+    protected function convertDependency_period($value) {
+        $this->period = "\"".$value."\"";
+    }
+
+    protected function convertExecution_failure_criteria($value) {
+        $this->states = "[ Ok ]"; //FIXME
+
+        $this->disable_checks = "true"; //FIXME
+    }
+
+    protected function convertNotification_failure_criteria($value) {
+        $this->disable_notifications = "true"; //FIXME
+    }
+
+    //parent host
+    protected function convertHost_name($value) {
+        $this->parent_host_name = "\"" . $value . "\"";
+    }
+
+    //parent service
+    protected function convertService_description($value) {
+        $this->parent_service_name = "\"" . $value . "\"";
+    }
+
+    //child host
+    protected function convertDependent_host_name($value) {
+        $arr = $this->splitComma($value);
+        $this->is_apply = true;
+
+        foreach ($arr as $hostname) {
+            if (substr($hostname, 0, 1) === '!') {
+                $hostname = substr($hostname, 1);
+                $this->ignoreWhere($this->migrateLegacyString($hostname) . ' in host.name');
+            } else {
+                $this->assignWhere($this->migrateLegacyString($hostname) . ' in host.name');
+            }
+        }
+    }
+
+    //child hostgroup
+    protected function convertDependent_hostgroup_name($value) {
+        $arr = $this->splitComma($value);
+        $this->is_apply = true;
+
+        foreach ($arr as $hostgroupname) {
+            if (substr($hostgroupname, 0, 1) === '!') {
+                $hostgroupname = substr($hostgroupname, 1);
+                $this->ignoreWhere($this->migrateLegacyString($hostgroupname) . ' in host.groups');
+            } else {
+                $this->assignWhere($this->migrateLegacyString($hostgroupname) . ' in host.groups');
+            }
+        }
+    }
+
+    //child service
+    protected function convertDependent_service_description($value) {
+        $arr = $this->splitComma($value);
+        $this->is_apply = true;
+
+        foreach ($arr as $servicename) {
+            if (substr($servicename, 0, 1) === '!') {
+                $servicename = substr($servicename, 1);
+                $this->ignoreWhere($this->migrateLegacyString($servicename) . ' in service.name');
+            } else {
+                $this->assignWhere($this->migrateLegacyString($servicename) . ' in service.name');
+            }
+        }
+    }
+
+    //child servicegroup
+    protected function convertDependent_servicegroup_name($value) {
+        $arr = $this->splitComma($value);
+        $this->is_apply = true;
+
+        foreach ($arr as $servicegroupname) {
+            if (substr($servicegroupname, 0, 1) === '!') {
+                $servicegroupname = substr($servicegroupname, 1);
+                $this->ignoreWhere($this->migrateLegacyString($servicegroupname) . ' in service.groups');
+            } else {
+                $this->assignWhere($this->migrateLegacyString($servicegroupname) . ' in service.groups');
+            }
+        }
     }
 }

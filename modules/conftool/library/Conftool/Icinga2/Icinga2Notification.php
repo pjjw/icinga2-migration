@@ -35,9 +35,10 @@ class Icinga2Notification extends Icinga2ObjectDefinition
 
     protected $v1AttributeMap = array(
         //'command_line' => 'command',
+
     );
 
-    protected function convertNotification_line($line) {
+    protected function convertHostgroup_name($value) {
 
     }
 }

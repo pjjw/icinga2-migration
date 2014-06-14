@@ -29,7 +29,7 @@
 
 namespace Icinga\Module\Conftool\Icinga;
 
-class IcingaServiceescalation extends IcingaObjectDefinition
+class IcingaHostescalation extends IcingaObjectDefinition
 {
     protected $key = ''; //dummy
     protected $name;
