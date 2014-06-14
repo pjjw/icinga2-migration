@@ -21,7 +21,6 @@ class Icinga2User extends Icinga2ObjectDefinition
     protected $v1RejectedAttributeMap = array(
         'service_notification_period',
         'host_notification_period',
-        'service_notification_options',
         'host_notification_options',
         'service_notification_commands',
         'host_notification_commands',
@@ -43,5 +42,17 @@ class Icinga2User extends Icinga2ObjectDefinition
     protected function convertPager($value)
     {
         $this->pager = "\"".$value."\"";
+    }
+
+    protected function convertService_notification_options($value)
+    {
+        $notification_filter = $this->migrateNotificationOptions($value, false); //default is service for migration
+
+        if (count($notification_filter['state']) > 0) {
+            $this->states = $this->arrayToString($notification_filter['state']); //constants, no strings
+        }
+        if (count($notification_filter['type']) > 0) {
+            $this->types = $this->arrayToString($notification_filter['type']); //constants, no strings
+        }
     }
 }

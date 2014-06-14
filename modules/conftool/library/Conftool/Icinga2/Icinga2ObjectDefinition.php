@@ -165,6 +165,17 @@ class Icinga2ObjectDefinition
                 //TODO recursive lookup in templates
                 printf("//Found contacts attribute: %s on object %s\n", $value, $object);
 
+                /*
+                $lookup = $this->collectObjectAttributeRecursive($object, 'contacts');
+
+                if (count($lookup) > 0) {
+                    foreach($lookup as $l_contact) {
+                        preg_replace('/^\+\w+/', '', $l_contact); //drop additive
+                        $all_contacts[] = $l_contact;
+                    }
+                }
+                */
+
                 continue;
             }
 
@@ -184,6 +195,16 @@ class Icinga2ObjectDefinition
                 printf("//Found contact_groups attribute: %s on object %s\n", $value, $object);
 
                 //TODO recursive lookup in templates
+                /*
+                $lookup = $this->collectObjectAttributeRecursive($object, 'contactgroups');
+
+                if (count($lookup) > 0) {
+                    foreach($lookup as $l_contactgroup) {
+                        preg_replace('/^\+\w+/', '', $l_contactgroup); //drop additive
+                        $all_contactgroups[] = $l_contactgroup;
+                    }
+                }
+                */
 
                 continue;
             }
@@ -284,6 +305,8 @@ class Icinga2ObjectDefinition
                         //create a new notification command
                         $this->notificationcommands($host_notification_command_name, $host_notification_command_line);
 
+                        $notification_filter = $this->migrateNotificationOptions($object->notification_options, true);
+
                         //create a new host notification object
                         $notification_object_name = "notification-".$host_notification_command_name;
                         $notification_object_attr = array (
@@ -291,6 +314,8 @@ class Icinga2ObjectDefinition
                             'import' => 'generic-host-notification',
                             'period' => $object->notification_period,
                             'interval' => $object->notification_interval,
+                            'states' => $notification_filter['state'],
+                            'types' => $notification_filter['type'],
                             'command' => $host_notification_command_name,
                             'host_name' => (string) $object
                         );
@@ -324,11 +349,16 @@ class Icinga2ObjectDefinition
 
                         //create a new host notification object
                         $notification_object_name = "notification-".$service_notification_command_name;
+
+                        $notification_filter = $this->migrateNotificationOptions($object->notification_options, false);
+
                         $notification_object_attr = array (
                             'users' => array( $contact ),
                             'import' => 'generic-service-notification',
                             'period' => $object->notification_period,
                             'interval' => $object->notification_interval,
+                            'states' => $notification_filter['state'],
+                            'types' => $notification_filter['type'],
                             'command' => $service_notification_command_name
                         );
 
@@ -511,6 +541,26 @@ class Icinga2ObjectDefinition
         return $new;
     }
 
+    protected function collectObjectAttributeRecursive($object, $attr)
+    {
+        static $attrs = array();
+        if ($object->$attr) {
+            $attrs[] = $object->$attr;
+            return $attrs;
+        }
+
+        $templates = $object->getParents();
+
+        foreach ($templates as $template) {
+            if (!$template->$attr) {
+                $this->collectObjectAttributeRecursive($template, $attr);
+            } else {
+                $attrs[] = $template->$attr;
+                return $attrs;
+            }
+        }
+    }
+
     protected function splitComma($string)
     {
         return preg_split('/\s*,\s*/', $string, null, PREG_SPLIT_NO_EMPTY);
@@ -616,7 +666,12 @@ class Icinga2ObjectDefinition
     }
 
     protected function getNotificationsAsString() {
-        $str = sprintf("//MIGRATION - NOTIFICATIONS (NEW) -- BEGIN\n");
+        $str = '';
+
+        if (count($this->notifications) > 0) {
+            $str .= sprintf("//MIGRATION - NOTIFICATIONS (NEW) -- BEGIN\n");
+        }
+
         foreach ($this->notifications as $notification_name => $notification_attr) {
 
             //workaround for unspecified services (no direct host_name)
@@ -634,7 +689,10 @@ class Icinga2ObjectDefinition
             $str .= sprintf("    period = \"%s\"\n", $notification_attr['period']);
             $str .= sprintf("    interval = %s\n", ((int)$notification_attr['interval']).'m');
 
-            $str .= sprintf("    users = %s\n", $this->renderArray($notification_attr['users']));
+            $str .= sprintf("    states = %s\n", $this->arrayToString($notification_attr['states'])); //constants, no strings
+            $str .= sprintf("    types = %s\n", $this->arrayToString($notification_attr['types'])); //constants, no strings
+
+            $str .= sprintf("    users = %s\n", $this->renderArray($notification_attr['users'])); //double quoted strings
 
             //host notification
             if (array_key_exists('host_name', $notification_attr) && !array_key_exists('service_name', $notification_attr)) {
@@ -660,7 +718,10 @@ class Icinga2ObjectDefinition
             $str .= sprintf("}\n\n");
         }
 
-        $str .= sprintf("//MIGRATION - NOTIFICATIONS (NEW) -- END\n");
+        if (count($this->notifications) > 0) {
+            $str .= sprintf("//MIGRATION - NOTIFICATIONS (NEW) -- END\n");
+        }
+
         return $str;
     }
 
@@ -695,7 +756,7 @@ class Icinga2ObjectDefinition
         //var_dump($this);
 
         return sprintf(
-            "%s %s \"%s\" {\n%s%s%s\n%s}\n%s\n%s\n%s\n",
+            "\n%s %s \"%s\" {\n%s%s%s\n%s}\n%s\n%s\n%s\n",
             $prefix,
             $this->type,
             $this->name,
@@ -844,5 +905,105 @@ template Notification "generic-service-notification" {
         //EVENTSTARTTIME
 
         return $line;
+    }
+
+    public function migrateNotificationOptions($options, $is_host)
+    {
+        $filter = array (
+            'state' => array(),
+            'type' => array()
+        );
+
+        $filter_names = array (
+            'o' => 'OK', //Up for hosts
+            'w' => 'Warning',
+            'c' => 'Critical',
+            'u' => 'Unknown',
+            'd' => 'Down',
+            's' => 'DowntimeStart, DowntimeEnd, DowntimeRemoved',
+            'r' => 'Recovery',
+            'f' => 'FlappingStart, FlappingEnd'
+        );
+        $filter_by = array (
+            'o' => 'state',
+            'w' => 'state',
+            'c' => 'state',
+            'u' => 'state',
+            'd' => 'state',
+            's' => 'type',
+            'r' => 'type',
+            'f' => 'type'
+        );
+
+        $options_arr = $this->str2Arr($options, ",", true, true);
+
+        # n means nothing, bail early
+        if (array_key_exists('n', $options_arr)) {
+            $filter['state'] = 0;
+            $filter['type'] = 0;
+            return $filter;
+        }
+
+        # recovery requires the Ok/Up state
+        if (array_key_exists('r', $options_arr)) {
+            if ($is_host) {
+                $filter['state'][] = 'Up';
+            } else {
+                $filter['state'][] = 'OK';
+            }
+        }
+
+        # always add Problem|Custom|OK
+        $filter['type'][] = 'Problem';
+        $filter['type'][] = 'Custom';
+        if ($is_host) {
+            $filter['state'][] = 'Up';
+        } else {
+            $filter['state'][] = 'OK';
+        }
+
+        //user wants all options
+        if (array_key_exists('a', $options_arr)) {
+            foreach ($filter_by as $by => $types) {
+                $value = $filter_names[$by];
+
+                if ($value == "OK" && $is_host == true) {
+                    $value = "Up";
+                }
+
+                if ($value == "Unknown" && $is_host == true) {
+                    printf("//WARNING: Skipping unreachable host filter.\n");
+                    continue;
+                }
+
+                $filter[$filter_by[$by]][] = $value;
+            }
+            return $filter;
+        }
+
+        //the selective way
+        foreach ($options_arr as $option) {
+            trim($option);
+
+            if (array_key_exists($option, $filter_names)) {
+                $value = $filter_names[$option];
+
+                if ($value == "OK" && $is_host == true) {
+                    $value = "Up";
+                }
+
+                if ($value == "Unknown" && $is_host == true) {
+                    printf("//WARNING: Skipping unreachable host filter.\n");
+                    continue;
+                }
+
+                $filter[$filter_by[$option]][] = $value;
+            } else {
+                sprintf("//ERROR: Unknown filter option: '%s'", $option);
+            }
+        }
+
+        return $filter;
+
     }
 }
