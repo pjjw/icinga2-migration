@@ -121,6 +121,30 @@ class MigrateCommand extends Command
         }
         printf("//MIGRATE TIMEPERIODS -- END\n");
 
+        printf("//MIGRATE HOST DEPENDENCIES -- BEGIN\n");
+        foreach ($config->getDefinitions('hostdependency') as $object) {
+            Icinga2ObjectDefinition::fromIcingaObjectDefinition($object, $config)->dump();
+        }
+        printf("//MIGRATE HOST DEPENDENCIES -- END\n");
+
+        printf("//MIGRATE SERVICE DEPENDENCIES -- BEGIN\n");
+        foreach ($config->getDefinitions('servicedependency') as $object) {
+            Icinga2ObjectDefinition::fromIcingaObjectDefinition($object, $config)->dump();
+        }
+        printf("//MIGRATE SERVICE DEPENDENCIES -- END\n");
+
+        printf("//MIGRATE HOST ESCALATION -- BEGIN\n");
+        foreach ($config->getDefinitions('hostescalation') as $object) {
+            Icinga2ObjectDefinition::fromIcingaObjectDefinition($object, $config)->dump();
+        }
+        printf("//MIGRATE HOST ESCALATION -- END\n");
+
+        printf("//MIGRATE SERVICE ESCALATION -- BEGIN\n");
+        foreach ($config->getDefinitions('serviceescalation') as $object) {
+            Icinga2ObjectDefinition::fromIcingaObjectDefinition($object, $config)->dump();
+        }
+        printf("//MIGRATE SERVICE ESCALATION -- END\n");
+
         $end = microtime(true);
         $runtime = $end - $start;
 

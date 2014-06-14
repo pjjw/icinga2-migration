@@ -555,6 +555,26 @@ class Icinga2ObjectDefinition
                 $new->setAttributesFromIcingaObjectDefinition($object, $config);
                 break;
 
+            case 'hostdependency':
+                $new = new Icinga2Dependency($object);
+                $new->setAttributesFromIcingaObjectDefinition($object, $config);
+                break;
+
+            case 'servicedependency':
+                $new = new Icinga2Dependency($object);
+                $new->setAttributesFromIcingaObjectDefinition($object, $config);
+                break;
+
+            case 'hostescalation':
+                $new = new Icinga2Notification($object);
+                $new->setAttributesFromIcingaObjectDefinition($object, $config);
+                break;
+
+            case 'serviceescalation':
+                $new = new Icinga2Notification($object);
+                $new->setAttributesFromIcingaObjectDefinition($object, $config);
+                break;
+
             default:
                 throw new Icinga2ConfigMigrationException(
                     sprintf(
