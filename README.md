@@ -71,11 +71,13 @@ this migration script:
 * Use the apply rules wherever possible (e.g. for service with `hostgroup_name` attribute)
 * Assign group members directly
 * Migrate host/service contacts for notifications into the new Notification logic
+* Convert the notification options to state/type filters
 * Create additional `EventCommand` objects for event handler migration
 * Create additional `NotificationCommand` objects for notification migration
 * Migrate the ARGn command arguments into custom attributes for commands
 * Replace runtime macros in command line for check, event, notification commands
 * Replace runtime macros in notes, notes_url, action_url, icon_image attributes
+* Migrate host parents into simple host dependencies
 * Treat all intervals as minute duration literal - append `m`
 * All comma separated lists are converted into arrays, if possible (except contacts for notifications)
 
