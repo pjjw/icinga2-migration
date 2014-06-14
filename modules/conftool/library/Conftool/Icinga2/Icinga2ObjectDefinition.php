@@ -55,6 +55,7 @@ class Icinga2ObjectDefinition
     protected $notificationcommands = array();
     protected $notificationobjects = array();
     protected $notifications = array();
+    protected $dependencies = array();
 
     public function __construct(IcingaObjectDefinition $name)
     {
@@ -106,6 +107,11 @@ class Icinga2ObjectDefinition
         $this->notifications[$name] = $attr;
     }
 
+    protected function dependencies($name, $attr)
+    {
+        $this->dependencies[$name] = $attr;
+    }
+
     protected function setAttributesFromIcingaObjectDefinition(IcingaObjectDefinition $object, IcingaConfig $config)
     {
         //template, parents and config
@@ -114,7 +120,9 @@ class Icinga2ObjectDefinition
 
         $all_contacts = array();
         $all_contactgroups = array();
+        $all_parents = array();
 
+        //---- LOOP ATTRIBUTES BEGIN
         foreach ($object->getAttributes() as $key => $value) {
 
             //rejects
@@ -172,6 +180,22 @@ class Icinga2ObjectDefinition
                 $this->eventcommands($eventcommand_name, $eventcommand_line);
                 $this->event_command = "\"" . $eventcommand_name . "\"";
                 //DONE
+                continue;
+            }
+
+            //parents to dependencies
+            if ($key == "parents") {
+                //skip templates
+                if ($this->isTemplate()) {
+                    continue;
+                }
+
+                $parents = $this->splitComma($value);
+
+                foreach($parents as $parent) {
+                    $all_parents[] = trim($parent);
+                }
+
                 continue;
             }
 
@@ -245,7 +269,7 @@ class Icinga2ObjectDefinition
 
             if ($object->getDefinitionType() == "timeperiod") {
                 if (preg_match('/^\d+/', $key)) {
-                    print_r("//ERROR: Timperiod property invalid. Skipping it.\n");
+                    print_r("//ERROR: Timeperiod property invalid. Skipping it.\n");
                     continue;
                 }
                 $key = "ranges.".$key;
@@ -267,7 +291,9 @@ class Icinga2ObjectDefinition
                 $this->{ $this->v1AttributeMap[$key] } = $value;
             }
         }
+        //---- LOOP ATTRIBUTES END
 
+        //---- NOTIFICATIONS BEGIN
         if ($object instanceof IcingaService || $object instanceof IcingaHost) {
 
             //var_dump($all_contactgroups);
@@ -409,9 +435,39 @@ class Icinga2ObjectDefinition
         //make sure we have unique notification commands (and also notifications, even if not that accurate TODO)
         $this->notificationcommands = array_unique($this->notificationcommands);
         $this->notifications = array_unique($this->notifications);
-        //end host/service notifications
 
+        //---- NOTIFICATIONS END
 
+        //---- HOST PARENTS BEGIN
+        if ($object instanceof IcingaHost) {
+
+            $all_parents = array_unique($all_parents);
+
+            if (count($all_parents) > 0) {
+                printf("//Found parents: %s\n", $this->arrayToString($all_parents));
+            }
+
+            foreach ($all_parents as $parent) {
+                trim($parent);
+
+                $host_obj = $config->GetObject($parent, 'host');
+
+                if ($host_obj == false) {
+                    print("//ERROR: Unknown parent host '" . $parent . "' referenced by object '" . $object . "'.");
+                    continue;
+                }
+
+                $dep_name = "child-" . $object . "-parent-" . $parent . "-host-dependency";
+
+                $dep_attrs = array (
+                    'child_host_name' => (string) $object,
+                    'parent_host_name' => $parent
+                );
+
+                $this->dependencies($dep_name, $dep_attrs);
+            }
+        }
+        //---- HOST PARENTS END
 
         //itl required imports
         if ($object->getDefinitionType() == "timeperiod") {
@@ -772,6 +828,35 @@ class Icinga2ObjectDefinition
         return $str;
     }
 
+    protected function getDependenciesAsString() {
+        $str = '';
+
+        if (count($this->dependencies) > 0) {
+            $str .= sprintf("//MIGRATION - DEPENDENCIES (NEW) -- BEGIN\n");
+        }
+
+        foreach ($this->dependencies as $dep_name => $dep_attr) {
+            $obj_type = "object";
+
+            $str .= sprintf("\n%s Dependency \"%s\" {\n", $obj_type, $dep_name);
+
+            if (array_key_exists('child_host_name', $dep_attr)) {
+                $str .= sprintf("    child_host_name = \"%s\"\n", $dep_attr['child_host_name']);
+            }
+            if (array_key_exists('parent_host_name', $dep_attr)) {
+                $str .= sprintf("    parent_host_name = \"%s\"\n", $dep_attr['parent_host_name']);
+            }
+
+            $str .= sprintf("}\n\n");
+        }
+
+        if (count($this->dependencies) > 0) {
+            $str .= sprintf("//MIGRATION - DEPENDENCIES (NEW) -- END\n");
+        }
+
+        return $str;
+    }
+
     public function isTemplate()
     {
         return $this->is_template;
@@ -802,20 +887,28 @@ class Icinga2ObjectDefinition
         //print_r("prefix: ".$prefix."\n");
         //var_dump($this);
 
-        return sprintf(
-            "\n%s %s \"%s\" {\n%s%s%s\n%s}\n%s\n%s\n%s\n",
+        $str = '';
+        $str .= sprintf(
+            "\n%s %s \"%s\" {\n%s%s%s\n%s}\n",
             $prefix,
             $this->type,
             $this->name,
             $this->getImportsAsString(),
             $this->getAttributesAsString(),
             $this->getVarsAsString(),
-            $this->getAssignmentsAsString(),
-            //additional objects newly created
+            $this->getAssignmentsAsString()
+        );
+
+        //additional objects newly created
+        $str .= sprintf(
+            "%s\n%s\n%s\n%s\n",
             $this->getEventCommandsAsString(),
             $this->getNotificationCommandsAsString(),
-            $this->getNotificationsAsString()
+            $this->getNotificationsAsString(),
+            $this->getDependenciesAsString()
         );
+
+        return $str;
     }
 
     public function dump()
