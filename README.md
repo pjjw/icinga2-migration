@@ -8,7 +8,7 @@ object configuration into native Icinga 2 configuration objects.
 > You are highly advised to read the Icinga 2 Migration documentation
 > and understand the new dynamic configuration syntax.
 >
-> Check the manual migration hints in the [documentation](https://docs.icinga.org/icinga2/latest/).
+> Check the manual migration hints in the [documentation](http://docs.icinga.org/icinga2/latest/).
 
 ## General Information
 
