@@ -824,7 +824,7 @@ class Icinga2ObjectDefinition
             else {
                 if ($obj_type == "apply") {
                     if (array_key_exists('service_assign', $notification_attr)) {
-                        $str .= sprintf("    assign where %s\n", $notification_attr['service_assign']);
+                        $str .= sprintf("    assign where \"%s\"\n", $notification_attr['service_assign']);
                     }
                     $this->getAssignmentsAsString();
                 }
