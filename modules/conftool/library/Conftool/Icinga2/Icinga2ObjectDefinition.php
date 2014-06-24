@@ -995,7 +995,7 @@ object NotificationCommand "migration-notification-command" {
             "\$CONTACTADDRESS5\$" => "\$user.vars.address5\$",
             "\$CONTACTADDRESS6\$" => "\$user.vars.address6\$",
             //service
-            "\$SERVICEDESC\$" => "\$service.description\$",
+            "\$SERVICEDESC\$" => "\$service.name\$",
             "\$SERVICEDISPLAYNAME\$" => "\$service.display_name\$",
             "\$SERVICECHECKCOMMAND\$" => "\$service.check_command\$",
             "\$SERVICESTATE\$" => "\$service.state\$",
